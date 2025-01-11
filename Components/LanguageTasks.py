@@ -1,13 +1,14 @@
-import openai
+
 from dotenv import load_dotenv
 import os
 import json
+import google.generativeai as genai
 
 load_dotenv()
 
-openai.api_key = os.getenv("OPENAI_API")
+genai.configure(api_key=os.environ["GEMINI_API_KEY"])
 
-if not openai.api_key:
+if not genai.configure:
     raise ValueError("API key not found. Make sure it is defined in the .env file.")
 
 
@@ -57,14 +58,27 @@ def GetHighlight(Transcription):
     print("Getting Highlight from Transcription ")
     try:
 
-        response = openai.ChatCompletion.create(
-            model="gpt-4o-2024-05-13",
-            temperature=0.7,
-            messages=[
-                {"role": "system", "content": system},
-                {"role": "user", "content": Transcription + system},
-            ],
+        # response = openai.ChatCompletion.create(
+        #     model="gpt-4o-2024-05-13",
+        #     temperature=0.7,
+        #     messages=[
+        #         {"role": "system", "content": system},
+        #         {"role": "user", "content": Transcription + system},
+        #     ],
+        # )
+        model = genai.GenerativeModel(
+             model_name="gemini-2.0-flash-exp",
+             generation_config={
+                "temperature": 1,
+                "top_p": 0.95,
+                "top_k": 40,
+                "max_output_tokens": 8192,
+                "response_mime_type": "text/plain",
+                },
+             system_instruction=system,
         )
+
+        response = model.generate_content(Transcription+system)
 
         json_string = response.choices[0].message.content
         json_string = json_string.replace("json", "")
